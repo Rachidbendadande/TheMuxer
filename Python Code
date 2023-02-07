@@ -1,0 +1,91 @@
+import subprocess
+import sys
+from PySide2.QtWidgets import (QApplication, QFileDialog, QVBoxLayout, QPushButton, QLabel, QWidget, QMessageBox)
+from PySide2.QtGui import QPixmap, QFont
+
+class Muxer(QWidget):
+    def __init__(self):
+        super().__init__()
+
+        self.video_file = ''
+        self.audio_file = ''
+        self.output_file = 'Name the output file'
+
+        self.initUI()
+
+    def initUI(self):
+
+        self.setWindowTitle("Muxer By Rachid")
+
+        vbox = QVBoxLayout()
+
+        label = QLabel("Muxer By Rachid")
+        font = QFont("Arial", 20, QFont.Bold, True)
+        label.setFont(font)
+        vbox.addWidget(label)
+
+        btn_video = QPushButton("Upload Video", self)
+        btn_video.clicked.connect(self.showDialogVideo)
+        vbox.addWidget(btn_video)
+
+        self.video_file_label = QLabel("No video file selected")
+        vbox.addWidget(self.video_file_label)
+
+        btn_audio = QPushButton("Upload Audio", self)
+        btn_audio.clicked.connect(self.showDialogAudio)
+        vbox.addWidget(btn_audio)
+
+        self.audio_file_label = QLabel("No audio file selected")
+        vbox.addWidget(self.audio_file_label)
+
+        btn_run = QPushButton("Run", self)
+        btn_run.clicked.connect(self.run)
+        vbox.addWidget(btn_run)
+
+        self.setLayout(vbox)
+
+    def showDialogVideo(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.ReadOnly
+        self.video_file, _ = QFileDialog.getOpenFileName(self, "Upload Video", "",
+                                                         "All Files (*);;Video Files (*.mp4 *.mkv *.avi)",
+                                                         options=options)
+        if self.video_file:
+            self.video_file_label.setText(self.video_file)
+
+    def showDialogAudio(self):
+        options = QFileDialog.Options()
+        options |= QFileDialog.ReadOnly
+        self.audio_file, _ = QFileDialog.getOpenFileName(self, "Upload Audio", "",
+                                                         "All Files (*);;Audio Files (*.wav *.mp3 *.aac)",
+                                                         options=options)
+
+        if self.audio_file:
+            self.audio_file_label.setText(self.audio_file)
+
+    def run(self):
+        if self.video_file and self.audio_file:
+            options = QFileDialog.Options()
+            options |= QFileDialog.ReadOnly
+            self.output_file, _ = QFileDialog.getSaveFileName(self, "Save File", "",
+                                                               "All Files (*);;Video Files (*.mp4)",
+                                                               options=options)
+            if self.output_file:
+                subprocess.run(
+                    ['ffmpeg', '-i', self.video_file, '-i', self.audio_file, '-map', '0:0', '-map', '1:0', '-c:v', 'copy',
+                     '-c:a', 'aac', '-b:a', '256k', self.output_file])
+                print("Muxing completed.")
+                QMessageBox.information(self, "Information", "DONE !")
+            else:
+                print("Cancelled.")
+                QMessageBox.information(self, "Critical", "CANCELLED !")
+        else:
+            print("Please upload both video and audio files.")
+            QMessageBox.information(self, "Information", "SELECT THE FILES !")
+
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    muxer = Muxer()
+    muxer.show()
+    sys.exit(app.exec_())
